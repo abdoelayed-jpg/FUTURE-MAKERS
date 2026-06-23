@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Future Makers University</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0e1a;
+            color: #fff;
+            font-family: 'Segoe UI', 'Tahoma', sans-serif;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .app-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .app-header h1 {
+            font-size: 1rem;
+            color: #00d4ff;
+            text-align: center;
+            flex: 1;
+        }
+        .app-header .subtitle {
+            font-size: 0.75rem;
+            color: #00d4ff;
+            opacity: 0.8;
+        }
+        .menu-btn, .notif-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+        .notif-btn { position: relative; }
+        .notif-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 8px; height: 8px;
+            background: #ff003c;
+            border-radius: 50%;
+        }
+
+        .welcome-card {
+            margin: 0 15px 15px;
+            background: linear-gradient(135deg, #1a1f3a 0%, #0d1120 100%);
+            border-radius: 20px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+        .welcome-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -20%;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+        }
+        .welcome-card h2 {
+            font-size: 0.9rem;
+            color: #8b9bb4;
+            margin-bottom: 5px;
+        }
+        .welcome-card .name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .welcome-card .name span { color: #00d4ff; }
+        .welcome-card p {
+            font-size: 0.8rem;
+            color: #8b9bb4;
+            line-height: 1.6;
+        }
+        .shield-icon {
+            position: absolute;
+            top: 20px; left: 20px;
+            width: 60px; height: 60px;
+            opacity: 0.3;
+        }
+
+        .status-bar {
+            margin: 0 15px 15px;
+            background: #141829;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .status-item {
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+        .status-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0; top: 50%;
+            transform: translateY(-50%);
+            width: 1px; height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .status-item i {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .status-item .label {
+            font-size: 0.65rem;
+            color: #8b9bb4;
+        }
+        .status-item .value {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .status-badge.warning { background: rgba(255, 170, 0, 0.15); color: #ffaa00; }
+        .status-badge.crash { background: rgba(255, 100, 0, 0.15); color: #ff6400; }
+        .status-badge.tilt { background: rgba(255, 0, 200, 0.15); color: #ff00c8; }
+        .status-badge.accident { background: rgba(255, 0, 60, 0.15); color: #ff003c; animation: pulse 0.5s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 0 15px 15px;
+        }
+        .stat-card {
+            background: #141829;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 15px 5px;
+            text-align: center;
+        }
+        .stat-card i {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .stat-card .stat-label {
+            font-size: 0.65rem;
+            color: #8b9bb4;
+            margin-bottom: 5px;
+        }
+        .stat-card .stat-value {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        .stat-card.force { color: #a855f7; }
+        .stat-card.dist { color: #00ff88; }
+        .stat-card.angle { color: #00d4ff; }
+        .stat-card.speed { color: #ffaa00; }
+
+        .section-title {
+            margin: 0 15px 10px;
+            font-size: 0.9rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .emergency-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 0 15px 15px;
+        }
+        .emergency-btn {
+            background: #141829;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .emergency-btn:active { transform: scale(0.95); }
+        .emergency-btn i {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .emergency-btn.police { color: #00d4ff; border-color: rgba(0, 212, 255, 0.3); }
+        .emergency-btn.police:active { background: rgba(0, 212, 255, 0.2); }
+        .emergency-btn.ambulance { color: #ff003c; border-color: rgba(255, 0, 60, 0.3); }
+        .emergency-btn.ambulance:active { background: rgba(255, 0, 60, 0.2); }
+        .emergency-btn.fire { color: #ffaa00; border-color: rgba(255, 170, 0, 0.3); }
+        .emergency-btn.fire:active { background: rgba(255, 170, 0, 0.2); }
+        .emergency-btn span {
+            font-size: 0.75rem;
+            display: block;
+            font-weight: bold;
+        }
+
+        .map-section {
+            margin: 0 15px 15px;
+            background: #141829;
+            border-radius: 20px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .map-header h3 {
+            font-size: 0.85rem;
+            color: #fff;
+        }
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            color: #ff003c;
+        }
+        .live-badge::before {
+            content: '';
+            width: 8px; height: 8px;
+            background: #ff003c;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        #map {
+            height: 250px;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+        .sound-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #00d4ff, #0088cc);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .sound-btn:active { opacity: 0.8; }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #0f1320;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-align: center;
+            color: #8b9bb4;
+            font-size: 0.65rem;
+            cursor: pointer;
+        }
+        .nav-item i {
+            font-size: 1.3rem;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .nav-item.active { color: #00d4ff; }
+
+        .alert-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            padding: 15px;
+            z-index: 2000;
+            display: none;
+            font-weight: bold;
+            text-align: center;
+            animation: slideDown 0.3s;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+        .alert-warning { background: rgba(255, 170, 0, 0.9); color: #000; }
+        .alert-crash { background: rgba(255, 100, 0, 0.9); color: #fff; }
+        .alert-tilt { background: rgba(255, 0, 200, 0.9); color: #fff; }
+        .alert-accident { background: rgba(255, 0, 60, 0.95); color: #fff; animation: shake 0.5s infinite; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .telegram-toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            z-index: 1500;
+            display: none;
+            white-space: nowrap;
+        }
+        .telegram-toast.success { background: #00ff88; color: #000; }
+        .telegram-toast.error { background: #ff003c; color: #fff; }
+        .telegram-toast.sending { background: #ffaa00; color: #000; }
+
+        .conn-status {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        .conn-status.connected { background: rgba(0, 255, 136, 0.2); color: #00ff88; border: 1px solid #00ff88; }
+        .conn-status.disconnected { background: rgba(255, 0, 60, 0.2); color: #ff003c; border: 1px solid #ff003c; }
+    </style>
+<base target="_blank">
+</head>
+<body>
+
+<div id="conn-status" class="conn-status disconnected">⚠️ غير متصل</div>
+
+<div id="alert-warning" class="alert-overlay alert-warning">⚠️ تحذير - WARNING DETECTED</div>
+<div id="alert-crash" class="alert-overlay alert-crash">💥 تصادم - CRASH DETECTED</div>
+<div id="alert-tilt" class="alert-overlay alert-tilt">🔄 انقلاب - TILT DETECTED</div>
+<div id="alert-accident" class="alert-overlay alert-accident">🚨 حادث مؤكد - ACCIDENT DETECTED</div>
+
+<div class="app-header">
+    <button class="menu-btn"><i class="fas fa-bars"></i></button>
+    <div>
+        <h1>FUTURE MAKERS UNIVERSITY</h1>
+        <div class="subtitle">Intelligent Surveillance Dashboard</div>
+    </div>
+    <button class="notif-btn"><i class="far fa-bell"></i></button>
+</div>
+
+<div class="welcome-card">
+    <h2>Welcome Back,</h2>
+    <div class="name">Future Maker <span>🚀</span></div>
+    <p>نظام المراقبة والاستجابة الذكي<br>جامعة برج العرب التكنولوجية</p>
+    <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="M9 12l2 2 4-4"/>
+    </svg>
+</div>
+
+<div class="status-bar">
+    <div class="status-item">
+        <i class="fas fa-shield-alt" style="color: #00d4ff;"></i>
+        <div class="label">حالة النظام</div>
+        <div id="system-status" class="status-badge">SAFE ✅</div>
+    </div>
+    <div class="status-item">
+        <i class="fas fa-eye" style="color: #00d4ff;"></i>
+        <div class="label">متصلين الآن</div>
+        <div id="active-users" class="value" style="color: #00d4ff;">1</div>
+    </div>
+    <div class="status-item">
+        <i class="fas fa-users" style="color: #8b9bb4;"></i>
+        <div class="label">الحوادث الكلية</div>
+        <div id="total-accidents" class="value">0</div>
+    </div>
+    <div class="status-item">
+        <i class="fas fa-heartbeat" style="color: #ff003c;"></i>
+        <div class="label">تنبيهات نشطة</div>
+        <div id="alert-count" class="value" style="color: #ff003c;">0</div>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card force">
+        <i class="fas fa-tachometer-alt"></i>
+        <div class="stat-label">قوة التصادم</div>
+        <div id="val-force" class="stat-value">G 0.00</div>
+    </div>
+    <div class="stat-card dist">
+        <i class="fas fa-route"></i>
+        <div class="stat-label">المسافة</div>
+        <div id="val-dist" class="stat-value">m 0.00</div>
+    </div>
+    <div class="stat-card angle">
+        <i class="fas fa-ruler-combined"></i>
+        <div class="stat-label">زاوية X</div>
+        <div id="val-angX" class="stat-value">0.0°</div>
+    </div>
+    <div class="stat-card speed">
+        <i class="fas fa-tachometer-alt"></i>
+        <div class="stat-label">السرعة</div>
+        <div id="val-speed" class="stat-value">0.0 km/h</div>
+    </div>
+</div>
+
+<div class="section-title">⚡ الإجراءات السريعة</div>
+<div class="emergency-grid">
+    <div class="emergency-btn police" onclick="sendEmergency('الشرطة')">
+        <i class="fas fa-user-shield"></i>
+        <span>إبلاغ الشرطة</span>
+    </div>
+    <div class="emergency-btn ambulance" onclick="sendEmergency('الإسعاف')">
+        <i class="fas fa-ambulance"></i>
+        <span>طلب إسعاف</span>
+    </div>
+    <div class="emergency-btn fire" onclick="sendEmergency('المطافي')">
+        <i class="fas fa-fire-extinguisher"></i>
+        <span>إبلاغ المطافي</span>
+    </div>
+</div>
+
+<div class="map-section">
+    <div class="map-header">
+        <div class="live-badge">مباشر</div>
+        <h3>📍 موقع الحادثة المباشر</h3>
+    </div>
+    <div id="map"></div>
+    <button class="sound-btn" id="sound-btn" onclick="toggleSound()">
+        <i class="fas fa-volume-mute"></i>
+        <span>تفعيل التنبيهات الصوتية</span>
+    </button>
+</div>
+
+<div id="telegram-toast" class="telegram-toast"></div>
+
+<div class="bottom-nav">
+    <div class="nav-item active">
+        <i class="fas fa-home"></i>
+        الرئيسية
+    </div>
+    <div class="nav-item">
+        <i class="fas fa-camera"></i>
+        الكاميرات
+    </div>
+    <div class="nav-item">
+        <i class="fas fa-chart-bar"></i>
+        التقارير
+    </div>
+    <div class="nav-item">
+        <i class="fas fa-cog"></i>
+        الإعدادات
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // ✅ IP الـ ESP32
+    const esp_ip = "http://10.25.25.107";
+
+    let alarmSound = null;
+    let soundEnabled = false;
+    let alertCount = 0;
+
+    // ✅ Telegram Bots (مع بوت المطافي الجديد)
+    const TELEGRAM_CONFIG = {
+        police: {
+            botToken: "8709991129:AAGO8HQK9FXCN-ZWGnx8NwVDoTUuMrANr3s",
+            chatId: "2026457986"
+        },
+        ambulance: {
+            botToken: "8684377045:AAFLtE_IHWyiQFR_4RH2vMbE7TENSIHwk6U",
+            chatId: "8383441532"
+        },
+        fire: {  // ✅ بوت المطافي الجديد
+            botToken: "8971578911:AAGkh0yTIddyPPzxZfB_QapnS0VogDRxV5Q",
+            chatId: "2026457986"  // غير ده لو عندك Chat ID مختلف للمطافي
+        }
+    };
+
+    let currentLat = 30.9167;
+    let currentLng = 29.5833;
+    let lastStatus = "SAFE";
+
+    var map = L.map('map', { zoomControl: false }).setView([currentLat, currentLng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    var marker = L.marker([currentLat, currentLng]).addTo(map).bindPopup('📍 الموقع الحالي');
+
+    var routePolyline = L.polyline([], {
+        color: '#00d4ff',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: '5, 10',
+        lineCap: 'round'
+    }).addTo(map);
+
+    var routePointsLayer = L.layerGroup().addTo(map);
+
+    var locationCircle = L.circle([currentLat, currentLng], {
+        color: '#00d4ff',
+        fillColor: '#00d4ff',
+        fillOpacity: 0.2,
+        radius: 50
+    }).addTo(map);
+
+    function toggleSound() {
+        if (!soundEnabled) {
+            alarmSound = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_c33ca68894.mp3');
+            soundEnabled = true;
+            document.getElementById('sound-btn').innerHTML = '<i class="fas fa-volume-up"></i><span>التنبيهات مفعلة</span>';
+        }
+    }
+
+    async function sendTelegramMessage(botToken, chatId, message) {
+        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
+            });
+            const result = await response.json();
+            return result.ok;
+        } catch (error) {
+            console.error('Telegram error:', error);
+            return false;
+        }
+    }
+
+    function createMessage(service, force, lat, lng) {
+        let message = `🚨 <b>بلاغ طوارئ عاجل من نظام FMU!</b>\n\n`;
+        message += `🛑 <b>الجهة المطلوبة:</b> ${service}\n`;
+        message += `💥 <b>قوة التصادم المسجلة:</b> ${force}\n`;
+        message += `📅 <b>التاريخ:</b> ${new Date().toLocaleString('ar-EG')}\n\n`;
+
+        if (lat && lng && lat !== 0) {
+            const googleMapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
+            const mapsAppLink = `geo:${lat},${lng}?q=${lat},${lng}`;
+            
+            message += `📍 <b>تفاصيل الموقع:</b>\n`;
+            message += `━━━━━━━━━━━━━━━━━━━━\n`;
+            message += `🌐 <b>خط العرض (Latitude):</b> ${lat.toFixed(6)}°\n`;
+            message += `🌐 <b>خط الطول (Longitude):</b> ${lng.toFixed(6)}°\n`;
+            message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+            message += `🔗 <b>فتح الموقع على الخريطة:</b>\n`;
+            message += `<a href="${googleMapsLink}">🗺️ Google Maps</a>\n`;
+            message += `<a href="${mapsAppLink}">📱 فتح في تطبيق الخرائط</a>\n\n`;
+            message += `📌 <b>الإحداثيات المباشرة:</b>\n`;
+            message += `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        } else {
+            message += `\n⚠️ <b>تنبيه: الموقع غير متاح حالياً</b>\n`;
+            message += `الرجاء التواصل للحصول على الموقع يدوياً.`;
+        }
+        return message;
+    }
+
+    async function sendEmergency(service) {
+        const force = document.getElementById('val-force').innerText;
+        const useLat = currentLat;
+        const useLng = currentLng;
+        const message = createMessage(service, force, useLat, useLng);
+
+        let config;
+        if (service === 'الشرطة') config = TELEGRAM_CONFIG.police;
+        else if (service === 'الإسعاف') config = TELEGRAM_CONFIG.ambulance;
+        else if (service === 'المطافي') config = TELEGRAM_CONFIG.fire;  // ✅ بوت المطافي
+        else {
+            showToast('❌ خدمة غير معروفة', 'error');
+            return;
+        }
+
+        showToast(`⏳ جارٍ إرسال بلاغ ${service}...`, 'sending');
+        const success = await sendTelegramMessage(config.botToken, config.chatId, message);
+        showToast(success ? `✅ تم إرسال بلاغ ${service} بنجاح!` : `❌ فشل إرسال بلاغ ${service}`, success ? 'success' : 'error');
+    }
+
+    async function triggerAutomatedResponse() {
+        const force = document.getElementById('val-force').innerText;
+        const useLat = currentLat;
+        const useLng = currentLng;
+
+        const policeMsg = createMessage("الشرطة", force, useLat, useLng);
+        const ambulanceMsg = createMessage("الإسعاف", force, useLat, useLng);
+        const fireMsg = createMessage("المطافي", force, useLat, useLng);  // ✅ بعت للمطافي كمان
+
+        showToast('🚨 جارِ استدعاء الشرطة والإسعاف والمطافي...', 'sending');
+
+        const [policeSuccess, ambulanceSuccess, fireSuccess] = await Promise.all([
+            sendTelegramMessage(TELEGRAM_CONFIG.police.botToken, TELEGRAM_CONFIG.police.chatId, policeMsg),
+            sendTelegramMessage(TELEGRAM_CONFIG.ambulance.botToken, TELEGRAM_CONFIG.ambulance.chatId, ambulanceMsg),
+            sendTelegramMessage(TELEGRAM_CONFIG.fire.botToken, TELEGRAM_CONFIG.fire.chatId, fireMsg)
+        ]);
+
+        const allSuccess = policeSuccess && ambulanceSuccess && fireSuccess;
+        showToast(allSuccess ? '✅ تم الإرسال التلقائي للجميع' : '⚠️ تم الإرسال لبعض الجهات فقط', allSuccess ? 'success' : 'error');
+    }
+
+    function showToast(text, type) {
+        const toast = document.getElementById('telegram-toast');
+        toast.innerText = text;
+        toast.className = `telegram-toast ${type}`;
+        toast.style.display = 'block';
+        if (type !== 'sending') setTimeout(() => toast.style.display = 'none', 4000);
+    }
+
+    function hideAllAlerts() {
+        document.getElementById('alert-warning').style.display = 'none';
+        document.getElementById('alert-crash').style.display = 'none';
+        document.getElementById('alert-tilt').style.display = 'none';
+        document.getElementById('alert-accident').style.display = 'none';
+    }
+
+    function updateSystemStatus(status) {
+        const statusEl = document.getElementById('system-status');
+        hideAllAlerts();
+
+        switch(status) {
+            case "SAFE":
+                statusEl.className = 'status-badge';
+                statusEl.innerText = 'SAFE ✅';
+                break;
+            case "WARNING":
+                statusEl.className = 'status-badge warning';
+                statusEl.innerText = '⚠️ WARNING';
+                document.getElementById('alert-warning').style.display = 'block';
+                alertCount++;
+                break;
+            case "CRASH DETECTED":
+                statusEl.className = 'status-badge crash';
+                statusEl.innerText = '💥 CRASH';
+                document.getElementById('alert-crash').style.display = 'block';
+                alertCount++;
+                break;
+            case "TILT DETECTED":
+                statusEl.className = 'status-badge tilt';
+                statusEl.innerText = '🔄 TILT';
+                document.getElementById('alert-tilt').style.display = 'block';
+                alertCount++;
+                break;
+            case "ACCIDENT DETECTED":
+                statusEl.className = 'status-badge accident';
+                statusEl.innerText = '🚨 ACCIDENT';
+                document.getElementById('alert-accident').style.display = 'block';
+                alertCount++;
+                break;
+        }
+        document.getElementById('alert-count').innerText = alertCount;
+    }
+
+    async function fetchData() {
+        try {
+            const response = await fetch(esp_ip + "/data");
+            const data = await response.json();
+
+            document.getElementById('val-dist').innerText = 'm ' + (data.dist || 0).toFixed(2);
+            document.getElementById('val-force').innerText = 'G ' + (data.force || 0).toFixed(2);
+            document.getElementById('val-angX').innerText = (data.angX || 0).toFixed(1) + '°';
+            
+            const speed = data.speed || 0;
+            document.getElementById('val-speed').innerText = speed.toFixed(1) + ' km/h';
+
+            document.getElementById('total-accidents').innerText = data.totalAccidents || 0;
+
+            const connStatus = document.getElementById('conn-status');
+            connStatus.className = 'conn-status connected';
+            connStatus.innerText = '✅ متصل';
+
+            if (data.lat && data.lng && data.lat !== 0) {
+                currentLat = data.lat;
+                currentLng = data.lng;
+                marker.setLatLng([currentLat, currentLng]);
+                locationCircle.setLatLng([currentLat, currentLng]);
+                map.panTo([currentLat, currentLng]);
+            }
+
+            if (data.route && Array.isArray(data.route) && data.route.length > 0) {
+                const latlngs = data.route.map(p => [p.lat, p.lng]);
+                routePolyline.setLatLngs(latlngs);
+
+                routePointsLayer.clearLayers();
+                data.route.forEach((point, index) => {
+                    const isLast = index === data.route.length - 1;
+                    const circle = L.circleMarker([point.lat, point.lng], {
+                        color: isLast ? '#ff003c' : '#00d4ff',
+                        fillColor: isLast ? '#ff003c' : '#00ff88',
+                        fillOpacity: isLast ? 0.9 : 0.3,
+                        radius: isLast ? 8 : 3,
+                        weight: 2
+                    });
+                    routePointsLayer.addLayer(circle);
+                });
+            }
+
+            updateSystemStatus(data.status);
+
+            if (data.status === "ACCIDENT DETECTED" && lastStatus !== "ACCIDENT DETECTED") {
+                if (soundEnabled && alarmSound) alarmSound.play().catch(e => console.log('Sound error:', e));
+                triggerAutomatedResponse();
+            }
+
+            lastStatus = data.status;
+
+        } catch (e) {
+            const connStatus = document.getElementById('conn-status');
+            connStatus.className = 'conn-status disconnected';
+            connStatus.innerText = '⚠️ غير متصل';
+            console.log("Connection error:", e);
+        }
+    }
+
+    // عداد المتصلين (مبسط)
+    let myUserId = Date.now();
+    setInterval(() => {
+        fetch(esp_ip + "/data").catch(() => {});
+    }, 5000);
+
+    setInterval(fetchData, 1000);
+</script>
+</body>
+</html>
